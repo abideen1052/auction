@@ -1,6 +1,8 @@
 import React from 'react';
-import {StyleSheet, TextInput, View} from 'react-native';
-import EmailIcon from '../assets/icons/email.svg';
+import {Pressable, StyleSheet, TextInput, View} from 'react-native';
+import {useDispatch, useSelector} from 'react-redux';
+import {RootState} from '../redux/store';
+import {setIsSecure} from '../redux/securePassword/securePasswordSlice';
 
 const InputField = ({
   value,
@@ -9,10 +11,12 @@ const InputField = ({
   secureTextEntry,
   icon,
 }: any) => {
+  const {isSecure} = useSelector((state: RootState) => state.securePassword);
+  const dispatch = useDispatch();
   return (
     <View style={styles.container}>
       <TextInput
-        secureTextEntry={secureTextEntry}
+        secureTextEntry={isSecure ? secureTextEntry : false}
         placeholder={placeHolder}
         placeholderTextColor="black"
         style={styles.inputStyle}
@@ -20,9 +24,11 @@ const InputField = ({
         onChangeText={onChangeText}
         selectTextOnFocus={true}
       />
-      <View style={styles.iconContainer}>
-        <EmailIcon style={icon} fill={'black'} />
-      </View>
+      <Pressable
+        style={styles.iconContainer}
+        onPress={() => dispatch(setIsSecure(!isSecure))}>
+        {icon}
+      </Pressable>
     </View>
   );
 };
@@ -45,11 +51,11 @@ const styles = StyleSheet.create({
   inputStyle: {
     fontSize: 15,
     color: 'black',
-    width: '100%',
+    width: '85%',
   },
   iconContainer: {
     position: 'absolute',
-    right: 10,
+    right: 5,
   },
 });
 

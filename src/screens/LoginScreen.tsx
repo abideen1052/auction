@@ -3,10 +3,16 @@ import React, {useState} from 'react';
 import InputField from '../components/InputField';
 import MainButton from '../components/MainButton';
 import Divider from '../components/Divider';
+import EmailIcon from '../assets/icons/mail.svg';
+import ShowIcon from '../assets/icons/show.svg';
+import HideIcon from '../assets/icons/hide.svg';
+import {useSelector} from 'react-redux';
+import {RootState} from '../redux/store';
 
-const LoginScreen = () => {
+const LoginScreen = ({navigation}: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const {isSecure} = useSelector((state: RootState) => state.securePassword);
   //const [result, setResult] = useState();
   const url = 'https://auction.riolabz.com/v1/auth/login';
   const credential = JSON.stringify({email, password});
@@ -21,13 +27,14 @@ const LoginScreen = () => {
         body: credentials,
       });
       console.log('Result', result.status);
+      const responseData = await result.json();
+      console.log('Response Data:', responseData);
       if (result.ok) {
-        const responseData = await result.json();
-        console.log('Response Data:', responseData);
+        navigation.navigate('InventoryList');
         Alert.alert('Success');
       } else {
-        console.log('Response Error:', result.statusText);
-        Alert.alert('Response Error:', result.statusText);
+        console.log('Response Error:', responseData.message.toString());
+        Alert.alert('Response Error:', responseData.message.toString());
       }
     } catch (error) {
       console.log('Error occurred in api ', error);
@@ -54,13 +61,25 @@ const LoginScreen = () => {
           placeHolder={'Dealer ID/ Mobile Number'}
           onChangeText={(input: string) => setEmail(input)}
           value={email}
-          icon={styles.iconStyle}
+          icon={<EmailIcon style={styles.iconStyle} fill="black" />}
         />
         <InputField
           placeHolder={'Password'}
           onChangeText={(input: string) => setPassword(input)}
           value={password}
-          //icon={styles.iconStyle}
+          icon={
+            isSecure ? (
+              <ShowIcon
+                style={password.length > 0 && styles.iconStyle}
+                fill="black"
+              />
+            ) : (
+              <HideIcon
+                style={password.length > 0 && styles.iconStyle}
+                fill="black"
+              />
+            )
+          }
           secureTextEntry
         />
         <MainButton
@@ -127,9 +146,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   iconStyle: {
-    height: 20,
-    width: 20,
-    marginRight: 20,
+    height: 25,
+    width: 25,
+    marginRight: 15,
   },
   loginButton: {
     backgroundColor: '#F7B40D',
