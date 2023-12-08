@@ -1,4 +1,5 @@
-import {Alert, Image, StatusBar, StyleSheet, Text, View} from 'react-native';
+/* eslint-disable no-lone-blocks */
+import {Image, StatusBar, StyleSheet, Text, View} from 'react-native';
 import React, {useState} from 'react';
 import InputField from '../components/InputField';
 import MainButton from '../components/MainButton';
@@ -6,41 +7,39 @@ import Divider from '../components/Divider';
 import EmailIcon from '../assets/icons/mail.svg';
 import ShowIcon from '../assets/icons/show.svg';
 import HideIcon from '../assets/icons/hide.svg';
-import {useSelector} from 'react-redux';
-import {RootState} from '../redux/store';
+import {useDispatch, useSelector} from 'react-redux';
+import {AppDispatch, RootState} from '../redux/store';
+import {handleReduxLogin, setIsLoading} from '../redux/login/LoginSlice';
+import LoadingComponent from '../components/LoadingComponent';
 
 const LoginScreen = ({navigation}: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const {isSecure} = useSelector((state: RootState) => state.securePassword);
-  //const [result, setResult] = useState();
-  const url = 'https://auction.riolabz.com/v1/auth/login';
   const credential = JSON.stringify({email, password});
   console.log(credential);
-
-  const handleLogin = async (credentials: any) => {
-    console.log('login', credentials);
-    try {
-      let result = await fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: credentials,
-      });
-      console.log('Result', result.status);
-      const responseData = await result.json();
-      console.log('Response Data:', responseData);
-      if (result.ok) {
-        navigation.navigate('InventoryList');
-        Alert.alert('Success');
-      } else {
-        console.log('Response Error:', responseData.message.toString());
-        Alert.alert('Response Error:', responseData.message.toString());
-      }
-    } catch (error) {
-      console.log('Error occurred in api ', error);
-      Alert.alert('Error occurred in api:');
+  const {isLoading} = useSelector((state: RootState) => state.login);
+  const dispatch = useDispatch<AppDispatch>();
+  const handleLogin = async (values: any) => {
+    const res = await dispatch(handleReduxLogin(values));
+    console.log('Result', res.payload);
+    if (res.payload && res.payload.success) {
+      dispatch(setIsLoading(false));
+      navigation.replace('InventoryList');
+    } else if (res.payload) {
+      dispatch(setIsLoading(false));
+      console.log('Response Error:', res.payload.message);
+    } else {
+      dispatch(setIsLoading(false));
+      console.log('Network error');
     }
   };
+  {
+    if (isLoading) {
+      return <LoadingComponent />;
+    }
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar translucent backgroundColor="transparent" />

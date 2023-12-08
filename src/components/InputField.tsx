@@ -2,7 +2,7 @@ import React from 'react';
 import {Pressable, StyleSheet, TextInput, View} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from '../redux/store';
-import {setIsSecure} from '../redux/securePassword/securePasswordSlice';
+import {setIsSecure} from '../redux/securePassword/SecurePasswordSlice';
 
 const InputField = ({
   value,

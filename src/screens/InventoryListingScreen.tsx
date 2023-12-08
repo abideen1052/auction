@@ -7,37 +7,33 @@ import {
   View,
 } from 'react-native';
 import React, {useEffect} from 'react';
-import Header from '../components/header';
+import Header from '../components/Header';
 import LikeIcon from '../assets/icons/like.svg';
 import ThumbIcon from '../assets/icons/thumb.svg';
 import CarIcon from '../assets/icons/car.svg';
 import EyeIcon from '../assets/icons/eye.svg';
+import {useDispatch, useSelector} from 'react-redux';
+import {AppDispatch, RootState} from '../redux/store';
+import {handleReduxInventoryList} from '../redux/inventory/InventorySlice';
 
 const InventoryListingScreen = () => {
+  const {result} = useSelector((state: RootState) => state.login);
+  const authToken = result.data.sessionToken;
   const auctionId = '654c6e0e4c178569c7bc607f';
-  const url =
-    'https://auction.riolabz.com/v1/auction_inventory/get/all/participant?auctionId=';
-  const authToken = '';
+  const dispatch = useDispatch<AppDispatch>();
+
+  // function to fetch the inventory data from api
   const fetchInventoryData = async (id: any) => {
-    try {
-      let result = await fetch(`${url}${id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-      });
-      console.log('Result', result.status);
-      if (result.ok) {
-        const responseData = await result.json();
-        console.log('Response Data:', responseData);
-      } else {
-        console.log('Response Error:', result.statusText);
-      }
-    } catch (error) {
-      console.log('Error occurred in api ', error);
+    const res = await dispatch(handleReduxInventoryList({id, authToken}));
+    const responseData = res.payload;
+    if (res.payload && res.payload.success) {
+      console.log('Response Data:', responseData.data);
+    } else {
+      console.log('Response Error:', responseData.message);
     }
   };
+
+  // useEffect to call the data fetching function after 2 seconds
   useEffect(() => {
     let fetchTimeOut: any;
     const fetchDataInterval = () => {
@@ -47,7 +43,8 @@ const InventoryListingScreen = () => {
     fetchDataInterval();
 
     return () => clearTimeout(fetchTimeOut);
-  }, []);
+  });
+
   return (
     <View style={styles.container}>
       <StatusBar
