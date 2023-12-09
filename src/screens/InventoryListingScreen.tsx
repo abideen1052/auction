@@ -1,12 +1,16 @@
+/* eslint-disable no-lone-blocks */
 import {
+  FlatList,
   Image,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  Touchable,
+  TouchableOpacity,
   View,
 } from 'react-native';
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import Header from '../components/Header';
 import LikeIcon from '../assets/icons/like.svg';
 import ThumbIcon from '../assets/icons/thumb.svg';
@@ -15,9 +19,11 @@ import EyeIcon from '../assets/icons/eye.svg';
 import {useDispatch, useSelector} from 'react-redux';
 import {AppDispatch, RootState} from '../redux/store';
 import {handleReduxInventoryList} from '../redux/inventory/InventorySlice';
+import LoadingComponent from '../components/LoadingComponent';
 
 const InventoryListingScreen = () => {
   const {result} = useSelector((state: RootState) => state.login);
+  const [inventoryData, setInventoryData] = useState(null);
   const authToken = result.data.sessionToken;
   const auctionId = '654c6e0e4c178569c7bc607f';
   const dispatch = useDispatch<AppDispatch>();
@@ -25,26 +31,46 @@ const InventoryListingScreen = () => {
   // function to fetch the inventory data from api
   const fetchInventoryData = async (id: any) => {
     const res = await dispatch(handleReduxInventoryList({id, authToken}));
+    setInventoryData(res.payload.data);
     const responseData = res.payload;
     if (res.payload && res.payload.success) {
-      console.log('Response Data:', responseData.data);
     } else {
       console.log('Response Error:', responseData.message);
     }
   };
 
-  // useEffect to call the data fetching function after 2 seconds
+  //useEffect to call the data fetching function after 2 seconds
   useEffect(() => {
     let fetchTimeOut: any;
     const fetchDataInterval = () => {
       fetchInventoryData(auctionId);
-      fetchTimeOut = setTimeout(fetchDataInterval, 2000);
+      fetchTimeOut = setTimeout(fetchDataInterval, 20000);
     };
     fetchDataInterval();
 
     return () => clearTimeout(fetchTimeOut);
   });
+  const formatDate = (timestamp: any) => {
+    const date = new Date(timestamp);
+    const padZero = (num: any) => (num < 10 ? `0${num}` : num);
+    const formattedDate = `${padZero(date.getHours())}:${padZero(
+      date.getMinutes(),
+    )}:${padZero(date.getSeconds())} ${padZero(
+      date.getDate(),
+    )} ${new Intl.DateTimeFormat('en-US', {month: 'long'}).format(
+      date,
+    )}, ${date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: 'numeric',
+    })}`;
 
+    return formattedDate;
+  };
+  {
+    if (inventoryData === null) {
+      return <LoadingComponent />;
+    }
+  }
   return (
     <View style={styles.container}>
       <StatusBar
@@ -62,99 +88,143 @@ const InventoryListingScreen = () => {
       <View style={styles.contentContainer}>
         <ScrollView>
           <View style={styles.buttonContainer}>
-            <View style={styles.topButton}>
+            <TouchableOpacity
+              style={styles.topButton}
+              // onPress={() => fetchInventoryData(auctionId)}
+            >
               <Text style={styles.buttonText}>Live inventory</Text>
-            </View>
+            </TouchableOpacity>
             <View style={styles.textContainer}>
               <Text style={styles.buttonText}>Completed</Text>
             </View>
           </View>
           <View style={styles.nameContainer}>
-            <Text style={styles.nameHead}>Auction Name :</Text>
-            <Text style={styles.name}>Yes Bank 4W CV Online North(54321)</Text>
+            <View style={styles.nameTextContainer}>
+              <Text style={styles.nameHead}>Auction Name: </Text>
+              <Text style={styles.name}>
+                {inventoryData[0].inventory.auction.name}(
+                {inventoryData[0].inventory.auction.auctionNo})
+              </Text>
+            </View>
             <View style={styles.likeContainer}>
               <LikeIcon />
             </View>
           </View>
-          <View style={styles.detailsContainer}>
-            <View style={styles.imageContainer}>
-              <Image
-                style={styles.image}
-                source={require('../assets/images/Car.png')}
-              />
-              <View style={styles.reportButton}>
-                <Text style={styles.autoBidText}>View Inspection Report</Text>
-              </View>
-              <View style={styles.eyeIconContainer}>
-                <EyeIcon />
-              </View>
-              <View style={styles.carDetails}>
-                <Text style={styles.detailText}>AP29BXXXX</Text>
-                <Text style={styles.detailText}>•</Text>
-                <Text style={styles.detailText}>Petrol</Text>
-                <Text style={styles.detailText}>•</Text>
-                <Text style={styles.detailText}>2014</Text>
-                <Text style={styles.detailText}>38000kms</Text>
-              </View>
-            </View>
-            <View style={styles.nameContainer}>
-              <Text style={styles.vehicleName}>
-                Maruti Suzuki Swift Dezire VDi
-              </Text>
-              <View style={styles.likeContainer}>
-                <LikeIcon />
-              </View>
-            </View>
-            <View style={styles.subDetailsContainer}>
-              <View style={styles.typeContainer}>
-                <View style={styles.typeIcon}>
-                  <CarIcon height={22} width={22} />
+          <FlatList
+            data={inventoryData}
+            renderItem={({item}) => {
+              return (
+                <View>
+                  <View style={styles.detailsContainer}>
+                    <View style={styles.imageContainer}>
+                      <Image
+                        style={styles.image}
+                        source={require('../assets/images/Car.png')}
+                      />
+                      <View style={styles.reportButton}>
+                        <Text style={styles.autoBidText}>
+                          View Inspection Report
+                        </Text>
+                      </View>
+                      <View style={styles.eyeIconContainer}>
+                        <EyeIcon />
+                      </View>
+                      <View style={styles.carDetails}>
+                        <Text style={styles.detailText}>AP29BXXXX</Text>
+                        <Text style={styles.detailText}>•</Text>
+                        <Text style={styles.detailText}>
+                          {item.inventory.vehicleInfo.fuelType}
+                        </Text>
+                        <Text style={styles.detailText}>•</Text>
+                        <Text style={styles.detailText}>
+                          {item.inventory.vehicleInfo.mfgYear}
+                        </Text>
+                        <Text style={styles.detailText}>38000kms</Text>
+                      </View>
+                    </View>
+                    <View style={styles.nameContainer}>
+                      <Text style={styles.vehicleName}>
+                        {`${item.inventory.vehicleInfo.model} ${item.inventory.vehicleInfo.make}`}
+                      </Text>
+                      <View style={styles.likeContainer}>
+                        <LikeIcon />
+                      </View>
+                    </View>
+                    <View style={styles.subDetailsContainer}>
+                      <View style={styles.typeContainer}>
+                        <View style={styles.typeIcon}>
+                          <CarIcon height={22} width={22} />
+                        </View>
+                        <Text style={styles.typeText}>
+                          {item.inventory.vehicleType.name}
+                        </Text>
+                        <Text style={styles.place}>
+                          {item.inventory.yardLocation}
+                        </Text>
+                        <Text style={styles.remark}>Remark</Text>
+                      </View>
+                      <View style={styles.likeIcon}>
+                        <ThumbIcon height={15} width={15} />
+                      </View>
+                    </View>
+                    <View style={styles.section}>
+                      <View style={styles.timeContainer}>
+                        <Text style={styles.timeText}>
+                          {formatDate(item.inventory.endTimestamp).slice(0, 8)}
+                        </Text>
+                        <Text style={styles.dateText}>
+                          {formatDate(item.inventory.endTimestamp).slice(9)}
+                        </Text>
+                        <Text style={styles.endText}>End time</Text>
+                      </View>
+                      <View style={styles.bidContainer}>
+                        <Text style={styles.bidCount}>
+                          {item.inventory.totalBidCount}
+                        </Text>
+                        <Text style={styles.bidText}>Bids</Text>
+                      </View>
+                      <View style={styles.commentContainer}>
+                        <Text style={styles.reserveText}>Reserve Met</Text>
+                        <Text style={styles.commentText}>
+                          Comment ({item.inventory.commentsCount})
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.tipText}>
+                      Tip :Swift Dezire was approved @ 5 lakh in Previous
+                      auctions
+                    </Text>
+                    {item.inventory.totalBidCount !== 0 && (
+                      <>
+                        <View style={styles.bidButtonContainer}>
+                          <View style={styles.autoBidButton}>
+                            <Text style={styles.autoBidText}>Set Auto Bid</Text>
+                          </View>
+                          <View style={styles.placeBidButton}>
+                            <Text style={styles.placeBidText}>Place Bid</Text>
+                          </View>
+                        </View>
+                        <View style={styles.bidDetailsContainer}>
+                          <View style={styles.heighBidContainer}>
+                            <Text style={styles.heighBidText}>
+                              {`Heights Bid- ${item.highestInventoryBid.amount}`}
+                            </Text>
+                          </View>
+                          <View style={styles.remainBidContainer}>
+                            <Text style={styles.remainBidText}>
+                              20 Bid Remaining
+                            </Text>
+                          </View>
+                        </View>
+                      </>
+                    )}
+                  </View>
                 </View>
-                <Text style={styles.typeText}>4 wheeler</Text>
-                <Text style={styles.place}>Bangalore</Text>
-                <Text style={styles.remark}>Remark</Text>
-              </View>
-              <View style={styles.likeIcon}>
-                <ThumbIcon height={15} width={15} />
-              </View>
-            </View>
-            <View style={styles.section}>
-              <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>02:24:22</Text>
-                <Text style={styles.dateText}>10 March, 9:38PM</Text>
-                <Text style={styles.endText}>End time</Text>
-              </View>
-              <View style={styles.bidContainer}>
-                <Text style={styles.bidCount}>18</Text>
-                <Text style={styles.bidText}>Bids</Text>
-              </View>
-              <View style={styles.commentContainer}>
-                <Text style={styles.reserveText}>Reserve Met</Text>
-                <Text style={styles.commentText}>Comment (5)</Text>
-              </View>
-            </View>
-            <Text style={styles.tipText}>
-              Tip :Swift Dezire was approved @ 5 lakh in Previous auctions
-            </Text>
-            <View style={styles.bidButtonContainer}>
-              <View style={styles.autoBidButton}>
-                <Text style={styles.autoBidText}>Set Auto Bid</Text>
-              </View>
-              <View style={styles.placeBidButton}>
-                <Text style={styles.placeBidText}>Place Bid</Text>
-              </View>
-            </View>
-            <View style={styles.bidDetailsContainer}>
-              <View style={styles.heighBidContainer}>
-                <Text style={styles.heighBidText}>
-                  Highest Bid - $3,40,0000
-                </Text>
-              </View>
-              <View style={styles.remainBidContainer}>
-                <Text style={styles.remainBidText}>20 Bid Remaining</Text>
-              </View>
-            </View>
-          </View>
+              );
+            }}
+            //keyExtractor={item => item.id.toString()}
+            scrollEnabled={false}
+          />
         </ScrollView>
       </View>
     </View>
@@ -229,6 +299,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 20,
+  },
+  nameTextContainer: {
+    flexDirection: 'row',
   },
   nameHead: {
     color: 'black',
@@ -248,11 +322,12 @@ const styles = StyleSheet.create({
   detailsContainer: {
     width: '93%',
     alignSelf: 'center',
-    height: 580,
+    height: 'auto',
     marginVertical: 10,
     elevation: 5,
     borderRadius: 10,
     backgroundColor: 'white',
+    paddingBottom: 10,
   },
   imageContainer: {
     width: '100%',
@@ -375,7 +450,10 @@ const styles = StyleSheet.create({
   endText: {
     color: 'black',
   },
-  bidContainer: {},
+  bidContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   bidCount: {
     color: 'black',
     fontWeight: 'bold',
