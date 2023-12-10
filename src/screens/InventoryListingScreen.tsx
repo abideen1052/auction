@@ -6,7 +6,6 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  Touchable,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -25,6 +24,7 @@ const InventoryListingScreen = () => {
   const {result} = useSelector((state: RootState) => state.login);
   const [inventoryData, setInventoryData] = useState(null);
   const authToken = result.data.sessionToken;
+  const remainingBuyingLimit = result.data.user.wallet.currentBuyingLimit;
   const auctionId = '654c6e0e4c178569c7bc607f';
   const dispatch = useDispatch<AppDispatch>();
 
@@ -83,7 +83,10 @@ const InventoryListingScreen = () => {
       </View>
       <View style={styles.topContainer}>
         <Text style={styles.limitText}>Remaining Buying Limit</Text>
-        <Text style={styles.limitAmount}>$82,00,000</Text>
+        <Text
+          style={
+            styles.limitAmount
+          }>{`₹${remainingBuyingLimit.toLocaleString()}`}</Text>
       </View>
       <View style={styles.contentContainer}>
         <ScrollView>
@@ -207,7 +210,7 @@ const InventoryListingScreen = () => {
                         <View style={styles.bidDetailsContainer}>
                           <View style={styles.heighBidContainer}>
                             <Text style={styles.heighBidText}>
-                              {`Heights Bid- ${item.highestInventoryBid.amount}`}
+                              {`Heights Bid- ₹${item.highestInventoryBid.amount.toLocaleString()}`}
                             </Text>
                           </View>
                           <View style={styles.remainBidContainer}>
@@ -264,6 +267,7 @@ const styles = StyleSheet.create({
   limitAmount: {
     color: 'black',
     fontSize: 15,
+    fontWeight: 'bold',
   },
   buttonContainer: {
     flexDirection: 'row',

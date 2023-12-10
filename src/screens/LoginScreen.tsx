@@ -1,5 +1,14 @@
 /* eslint-disable no-lone-blocks */
-import {Image, StatusBar, StyleSheet, Text, View} from 'react-native';
+import {
+  Image,
+  Keyboard,
+  Modal,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
 import React, {useState} from 'react';
 import InputField from '../components/InputField';
 import MainButton from '../components/MainButton';
@@ -11,6 +20,8 @@ import {useDispatch, useSelector} from 'react-redux';
 import {AppDispatch, RootState} from '../redux/store';
 import {handleReduxLogin, setIsLoading} from '../redux/login/LoginSlice';
 import LoadingComponent from '../components/LoadingComponent';
+import {setErrorToastModalVisible} from '../redux/modal/ModalSlice';
+import ToastComponent from '../components/ToastComponent';
 
 const LoginScreen = ({navigation}: any) => {
   const [email, setEmail] = useState('');
@@ -18,7 +29,11 @@ const LoginScreen = ({navigation}: any) => {
   const {isSecure} = useSelector((state: RootState) => state.securePassword);
   const credential = JSON.stringify({email, password});
   console.log(credential);
+  const [errorMessage, setErrorMessage] = useState('');
   const {isLoading} = useSelector((state: RootState) => state.login);
+  const errorToastModal = useSelector(
+    (state: RootState) => state.modal.errorToastModal,
+  );
   const dispatch = useDispatch<AppDispatch>();
   const handleLogin = async (values: any) => {
     const res = await dispatch(handleReduxLogin(values));
@@ -28,10 +43,14 @@ const LoginScreen = ({navigation}: any) => {
       navigation.replace('InventoryList');
     } else if (res.payload) {
       dispatch(setIsLoading(false));
+      setErrorMessage(res.payload.message);
+      dispatch(setErrorToastModalVisible(true));
+
       console.log('Response Error:', res.payload.message);
     } else {
       dispatch(setIsLoading(false));
-      console.log('Network error');
+      setErrorMessage('Network Error');
+      dispatch(setErrorToastModalVisible(true));
     }
   };
   {
@@ -41,63 +60,76 @@ const LoginScreen = ({navigation}: any) => {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar translucent backgroundColor="transparent" />
-      <View style={styles.imageContainer}>
-        <Image
-          style={styles.image}
-          source={require('../assets/images/Images.png')}
-        />
-        <Image
-          style={styles.logo}
-          source={require('../assets/images/Logo.png')}
-        />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        <StatusBar translucent backgroundColor="transparent" />
+        <View style={styles.imageContainer}>
+          <Image
+            style={styles.image}
+            source={require('../assets/images/Images.png')}
+          />
+          <Image
+            style={styles.logo}
+            source={require('../assets/images/Logo.png')}
+          />
+        </View>
+        <View style={styles.loginContainer}>
+          <Text style={styles.headText}>You're Welcome</Text>
+          <Text style={styles.subText}>Enter your Login Details</Text>
+          <InputField
+            placeHolder={'Dealer ID/ Mobile Number'}
+            onChangeText={(input: string) => setEmail(input)}
+            value={email}
+            icon={<EmailIcon style={styles.iconStyle} fill="black" />}
+          />
+          <InputField
+            placeHolder={'Password'}
+            onChangeText={(input: string) => setPassword(input)}
+            value={password}
+            icon={
+              isSecure ? (
+                <ShowIcon
+                  style={password.length > 0 && styles.iconStyle}
+                  fill="black"
+                />
+              ) : (
+                <HideIcon
+                  style={password.length > 0 && styles.iconStyle}
+                  fill="black"
+                />
+              )
+            }
+            secureTextEntry
+          />
+          <MainButton
+            title="Login"
+            customStyle={styles.loginButton}
+            titleStyle={styles.loginText}
+            onPress={() => handleLogin(credential)}
+          />
+          <Text style={styles.optionText}>
+            Log in with OTP | Forgot Password?
+          </Text>
+          <Divider />
+          <MainButton
+            title="Register"
+            customStyle={styles.registerButton}
+            titleStyle={styles.registerText}
+          />
+        </View>
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={errorToastModal}
+          onRequestClose={() => {
+            dispatch(setErrorToastModalVisible(false));
+          }}>
+          <ToastComponent
+            message={errorMessage ? errorMessage : 'Network error'}
+          />
+        </Modal>
       </View>
-      <View style={styles.loginContainer}>
-        <Text style={styles.headText}>You're Welcome</Text>
-        <Text style={styles.subText}>Enter your Login Details</Text>
-        <InputField
-          placeHolder={'Dealer ID/ Mobile Number'}
-          onChangeText={(input: string) => setEmail(input)}
-          value={email}
-          icon={<EmailIcon style={styles.iconStyle} fill="black" />}
-        />
-        <InputField
-          placeHolder={'Password'}
-          onChangeText={(input: string) => setPassword(input)}
-          value={password}
-          icon={
-            isSecure ? (
-              <ShowIcon
-                style={password.length > 0 && styles.iconStyle}
-                fill="black"
-              />
-            ) : (
-              <HideIcon
-                style={password.length > 0 && styles.iconStyle}
-                fill="black"
-              />
-            )
-          }
-          secureTextEntry
-        />
-        <MainButton
-          title="Login"
-          customStyle={styles.loginButton}
-          titleStyle={styles.loginText}
-          onPress={() => handleLogin(credential)}
-        />
-        <Text style={styles.optionText}>
-          Log in with OTP | Forgot Password?
-        </Text>
-        <Divider />
-        <MainButton
-          title="Register"
-          customStyle={styles.registerButton}
-          titleStyle={styles.registerText}
-        />
-      </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 };
 
